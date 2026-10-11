@@ -21,7 +21,7 @@ X_train, y_train = load(f"{BASE}/train.csv")
 X_val, y_val = load(f"{BASE}/val.csv")
 X_test, y_test = load(f"{BASE}/test.csv")
 
-# عينات الكاميرا بتاعتك: تتضاف للـ train، ونص منها (بشكل عشوائي) للـ val
+# Your own camera samples: added to train, and a random 20% of them go to val
 if os.path.exists(CAMERA_CSV):
     Xc, yc = load(CAMERA_CSV)
     rng = np.random.default_rng(42)
@@ -30,12 +30,12 @@ if os.path.exists(CAMERA_CSV):
     y_train = np.concatenate([y_train, yc[~mask]])
     X_val = np.vstack([X_val, Xc[mask]])
     y_val = np.concatenate([y_val, yc[mask]])
-    print(f"ضفنا {len(yc)} عينة من الكاميرا")
-    print("(ملحوظة: عينات الكاميرا المتتالية شبه بعض، فالـ val هنا متفائل. "
-          "الاختبار الحقيقي هو التجربة بالإيد.)")
+    print(f"Added {len(yc)} camera samples")
+    print("(Note: consecutive camera samples are nearly identical, so the val score here is optimistic. "
+          "The real test is trying it with your hand.)")
 
 print("train:", X_train.shape, "| val:", X_val.shape, "| test:", X_test.shape)
-print("توزيع الكلاسات في train:", np.bincount(y_train, minlength=len(NAMES)))
+print("Class distribution in train:", np.bincount(y_train, minlength=len(NAMES)))
 
 models = {
     "RandomForest": RandomForestClassifier(n_estimators=200, n_jobs=-1, random_state=42),
@@ -52,7 +52,7 @@ for name, model in models.items():
     acc = accuracy_score(y_val, model.predict(X_val))
 
     t = time.perf_counter()
-    for i in range(200):                         # latency لفريم واحد
+    for i in range(200):                         # latency for a single frame
         model.predict_proba(X_val[i % len(X_val)].reshape(1, -1))
     ms = (time.perf_counter() - t) / 200 * 1000
     print(f"{name}: val accuracy = {acc:.4f} | {ms:.2f} ms/frame")
@@ -60,15 +60,15 @@ for name, model in models.items():
     if acc > best_acc:
         best_name, best_acc, best_model = name, acc, model
 
-print(f"\nالأفضل: {best_name}")
+print(f"\nBest: {best_name}")
 pred = best_model.predict(X_test)
 print(f"test accuracy = {accuracy_score(y_test, pred):.4f}\n")
 labels = sorted(set(y_test) | set(pred))
-print("confusion matrix (الصفوف = الحقيقي، الأعمدة = المتوقع):")
+print("confusion matrix (rows = actual, columns = predicted):")
 print(confusion_matrix(y_test, pred, labels=labels))
 print()
 print(classification_report(y_test, pred, labels=labels,
                             target_names=[NAMES[i] for i in labels], zero_division=0))
 
 joblib.dump(best_model, MODEL_PATH)
-print("اتحفظ:", MODEL_PATH)
+print("Saved:", MODEL_PATH)

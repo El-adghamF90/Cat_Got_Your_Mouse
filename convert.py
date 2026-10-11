@@ -5,7 +5,7 @@ import random
 
 from common import BASE, CLASSES, mirror, normalize
 
-LIMITS = {"train": 3000, "val": 500, "test": 500}  # أقصى عدد صور لكل إيماءة
+LIMITS = {"train": 3000, "val": 500, "test": 500}  # max number of images per gesture
 random.seed(42)
 
 
@@ -13,7 +13,7 @@ def find_json(split, name):
     for p in glob.glob(f"{BASE}/**/{split}/{name}.json", recursive=True):
         if ".ipynb_checkpoints" not in p:
             return p
-    raise FileNotFoundError(f"مش لاقي {split}/{name}.json جوه {BASE}")
+    raise FileNotFoundError(f"Could not find {split}/{name}.json inside {BASE}")
 
 
 for split, limit in LIMITS.items():
@@ -22,7 +22,7 @@ for split, limit in LIMITS.items():
         try:
             path = find_json(split, name)
         except FileNotFoundError as e:
-            print("تحذير:", e)
+            print("Warning:", e)
             continue
         with open(path) as f:
             data = json.load(f)
@@ -43,13 +43,13 @@ for split, limit in LIMITS.items():
                 count += 1
                 if split == "train":
                     rows.append(mirror(row) + [label])
-                break                      # إيد واحدة من كل صورة
+                break                      # one hand per image
         print(split, name, count)
         if count == 0:
-            print(f"  تحذير: مفيش عينات للكلاس {name} (لو no_gesture، "
-                  "ممكن الـ landmarks فاضية في الملف ده، سجّله من الكاميرا بـ record.py)")
+            print(f"  Warning: no samples for class {name} (if it's no_gesture, "
+                  "the landmarks may be empty in this file; record it from the camera with record.py)")
     random.shuffle(rows)
     out = f"{BASE}/{split}.csv"
     with open(out, "w", newline="") as f:
         csv.writer(f).writerows(rows)
-    print(f"{out}: {len(rows)} سطر\n")
+    print(f"{out}: {len(rows)} rows\n")

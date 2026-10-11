@@ -1,7 +1,7 @@
-"""تسجيل عينات من الكاميرا بتاعتك.
-اضغط رقم الكلاس (0-5) علشان يبدأ يسجل، واضغط نفس الرقم تاني أو space علشان يقف.
-0 fist | 1 one | 2 ok | 3 call | 4 peace | 5 no_gesture (إيد عادية/بتتحرك/مرتاحة)
-ESC للخروج والحفظ. سجّل 200-300 عينة لكل إيماءة، بزوايا وأوضاع مختلفة.
+"""Record samples from your own camera.
+Press a class number (0-5) to start recording, press the same number again or space to stop.
+0 little_finger | 1 one | 2 peace | 3 grabbing | 4 two_up | 5 no_gesture (normal/moving/relaxed hand)
+ESC to quit and save. Record 200-300 samples per gesture, from different angles and positions.
 """
 import csv
 import os
@@ -25,7 +25,7 @@ try:
         ok, frame = cap.read()
         if not ok:
             break
-        frame = cv2.flip(frame, 1)              # نفس الـ flip بتاع mouse.py
+        frame = cv2.flip(frame, 1)              # same flip as mouse.py
         res = hands.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
         if res.multi_hand_landmarks:
             lm = res.multi_hand_landmarks[0]
@@ -60,4 +60,4 @@ finally:
         new = not os.path.exists(CAMERA_CSV)
         with open(CAMERA_CSV, "a", newline="") as f:
             csv.writer(f).writerows(rows)
-        print(f"اتضاف {len(rows)} سطر في {CAMERA_CSV}", counts)
+        print(f"Added {len(rows)} rows to {CAMERA_CSV}", counts)

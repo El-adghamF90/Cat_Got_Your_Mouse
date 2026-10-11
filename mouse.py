@@ -1,7 +1,12 @@
 """Hand Mouse
-SPACE = تشغيل/إيقاف التحكم (بيبدأ متوقف) | ESC = خروج
-one  = تحريك المؤشر | ok = كليك | call = كليك يمين
-fist = سحب (drag) | peace = سكرول بتحريك الإيد لفوق وتحت
+SPACE = toggle control on/off (starts off) | ESC = quit
+
+Gestures (change them from the G_* constants below if you want):
+one           = move the cursor
+peace         = left click
+little_finger = right click
+two_up        = scroll (move your hand up and down)
+grabbing      = select/drag (holds the button down + move your hand, releases when you drop the gesture)
 """
 import platform
 import time
@@ -16,20 +21,31 @@ import pyautogui
 from common import MODEL_PATH, NAMES, normalize
 
 pyautogui.PAUSE = 0
-pyautogui.FAILSAFE = True   # حرّك الماوس بسرعة لأعلى يسار الشاشة لو عايز توقف طوارئ
+pyautogui.FAILSAFE = True   # quickly move the mouse to the top-left corner of the screen for an emergency stop
+
+# ---- Map gestures to actions (names must match NAMES in common.py exactly) ----
+G_MOVE = "one"
+G_CLICK = "peace"
+G_RIGHT = "little_finger"
+G_SCROLL = "two_up"
+G_SELECT = "grabbing"
+# -------------------------------------------------------------------------------
 
 model = joblib.load(MODEL_PATH)
-CLASS_NAMES = [NAMES[c] for c in model.classes_]   # ترتيب مضمون من الموديل
+CLASS_NAMES = [NAMES[c] for c in model.classes_]   # order guaranteed by the model
+for g in (G_MOVE, G_CLICK, G_RIGHT, G_SCROLL, G_SELECT):
+    if g not in CLASS_NAMES:
+        raise SystemExit(f"Gesture '{g}' is not in the model. Available names: {CLASS_NAMES}")
 
 SCREEN_W, SCREEN_H = pyautogui.size()
 MARGIN = 0.15
 SMOOTH = 0.35
 CLICK_COOLDOWN = 0.8
-POINTER_LM = 5           # قاعدة السبابة: مبتتحركش لما الصباع يتقفل، فالكليك يقع في مكانه
+POINTER_LM = 5           # index finger base: relatively stable no matter how the fingers move
 MIN_CONF = 0.7
 
-# على Windows السكرول بوحدات 120 للنقرة، وعلى Mac/Linux بالسطر. اضبط الرقم بالتجربة
-# (لو السكرول معكوس خليه بالسالب)
+# On Windows scrolling uses units of 120 per notch, on Mac/Linux it is per line. Tune the number by trial
+# (if scrolling is reversed, make it negative)
 SCROLL_GAIN = 3000 if platform.system() == "Windows" else 300
 SCROLL_DEADZONE = 0.004
 
@@ -82,22 +98,22 @@ try:
         now = time.time()
 
         if enabled:
-            # أكشنز بتحصل مرة عند تغيّر الإيماءة
+            # actions that fire once when the gesture changes
             if gesture != stable:
-                if gesture == "ok" and now - last_click > CLICK_COOLDOWN:
+                if gesture == G_CLICK and now - last_click > CLICK_COOLDOWN:
                     pyautogui.click()
                     last_click = now
-                elif gesture == "call" and now - last_click > CLICK_COOLDOWN:
+                elif gesture == G_RIGHT and now - last_click > CLICK_COOLDOWN:
                     pyautogui.rightClick()
                     last_click = now
-                elif gesture == "fist" and not dragging:
+                elif gesture == G_SELECT and not dragging:
                     pyautogui.mouseDown()
                     dragging = True
-                if stable == "fist" and gesture != "fist":
+                if stable == G_SELECT and gesture != G_SELECT:
                     release_drag()
 
-            # تحريك المؤشر (في وضع one أو أثناء السحب)
-            if gesture in ("one", "fist") and lm:
+            # move the cursor (in move mode or while selecting)
+            if gesture in (G_MOVE, G_SELECT) and lm:
                 p = lm.landmark[POINTER_LM]
                 tx = np.clip((p.x - MARGIN) / (1 - 2 * MARGIN), 0, 1) * SCREEN_W
                 ty = np.clip((p.y - MARGIN) / (1 - 2 * MARGIN), 0, 1) * SCREEN_H
@@ -108,8 +124,8 @@ try:
             else:
                 cur_x, cur_y = pyautogui.position()
 
-            # سكرول
-            if gesture == "peace" and lm:
+            # scroll
+            if gesture == G_SCROLL and lm:
                 y = lm.landmark[12].y
                 if prev_y is not None and abs(y - prev_y) > SCROLL_DEADZONE:
                     pyautogui.scroll(int(-(y - prev_y) * SCROLL_GAIN))

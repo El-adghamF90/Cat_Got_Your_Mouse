@@ -1,7 +1,7 @@
-"""يرسم شكل كل إيماءة موجودة في annotations بتاعة HaGRID (عينتين لكل إيماءة).
-التشغيل:  python view_all.py
-بيحفظ all_gestures.png جنب الكود. اقرأ أسماء الإيماءات من عناوين الرسم،
-وهي نفس الأسماء اللي تحطها في NAMES جوه common.py.
+"""Draws what each gesture in the HaGRID annotations looks like (two samples per gesture).
+Run:  python view_all.py
+It saves all_gestures.png next to the script. Read the gesture names from the plot titles;
+they are the same names you put in NAMES inside common.py.
 """
 import glob
 import json
@@ -16,8 +16,8 @@ import matplotlib.pyplot as plt
 
 from common import BASE, HERE, normalize
 
-SPLIT = "val"            # val أصغر وأسرع في التحميل من train
-SAMPLES = 2              # عدد العينات لكل إيماءة
+SPLIT = "val"            # val is smaller and faster to load than train
+SAMPLES = 2              # number of samples per gesture
 GESTURES_PER_ROW = 4
 random.seed(1)
 
@@ -36,9 +36,9 @@ def find_files(split):
 
 files = find_files(SPLIT) or find_files("train")
 if not files:
-    raise SystemExit(f"مش لاقي ملفات json جوه {BASE}")
+    raise SystemExit(f"Could not find any json files inside {BASE}")
 
-print(f"لقيت {len(files)} ملف:")
+print(f"Found {len(files)} files:")
 gestures = {}
 for path in files:
     name = os.path.splitext(os.path.basename(path))[0]
@@ -56,7 +56,7 @@ for path in files:
         if len(found) >= SAMPLES:
             break
     gestures[name] = found
-    print(f"  {name}: {len(found)} عينة")
+    print(f"  {name}: {len(found)} samples")
 
 names = sorted(gestures)
 cols = GESTURES_PER_ROW * SAMPLES
@@ -78,7 +78,7 @@ for i, name in enumerate(names):
         for a, b in CONNECTIONS:
             ax.plot([xs[a], xs[b]], [ys[a], ys[b]], "b-", linewidth=1)
         ax.scatter(xs, ys, c="r", s=10)
-        ax.scatter(xs[0], ys[0], c="g", s=30)      # المعصم
+        ax.scatter(xs[0], ys[0], c="g", s=30)      # wrist
         ax.invert_yaxis()
         ax.set_aspect("equal")
         ax.set_xticks([])
@@ -89,4 +89,4 @@ for i, name in enumerate(names):
 plt.tight_layout()
 out = os.path.join(HERE, "all_gestures.png")
 plt.savefig(out, dpi=100)
-print("اتحفظت:", out)
+print("Saved:", out)
