@@ -62,6 +62,25 @@ PLAY_HOLD = 1.0          # seconds to hold the gesture before play/pause fires
 PLAY_COOLDOWN = 2.0
 
 
+SOUNDS_ENABLED = True
+SOUND_DIR = "/System/Library/Sounds"       # built-in macOS sounds (.aiff)
+SOUNDS = {                                  # action -> sound name; pick any file in SOUND_DIR
+    "click": "Tink",
+    "right": "Pop",
+    "select": "Morse",
+    "release": "Bottle",
+    "play": "Glass",
+}
+
+
+def play_sound(action):
+    """Play a short sound without blocking the loop (macOS only)."""
+    if not SOUNDS_ENABLED or platform.system() != "Darwin":
+        return
+    subprocess.Popen(["afplay", f"{SOUND_DIR}/{SOUNDS[action]}.aiff"],
+                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
 def get_volume():
     """macOS output volume (0-100), or None if unsupported (not macOS, external audio, ...)."""
     if platform.system() != "Darwin":
@@ -103,6 +122,7 @@ vol_prev_g = None
 last_vol_sent = -1
 last_vol_time = 0.0
 hold_start = None
+play_fired = False
 last_play = 0.0
 
 
@@ -111,6 +131,7 @@ def release_drag():
     if dragging:
         pyautogui.mouseUp()
         dragging = False
+        play_sound("release")
 
 
 try:
@@ -143,12 +164,15 @@ try:
             if gesture != stable:
                 if gesture == G_CLICK and now - last_click > CLICK_COOLDOWN:
                     pyautogui.click()
+                    play_sound("click")
                     last_click = now
                 elif gesture == G_RIGHT and now - last_click > CLICK_COOLDOWN:
                     pyautogui.rightClick()
+                    play_sound("right")
                     last_click = now
                 elif gesture == G_SELECT and not dragging:
                     pyautogui.mouseDown()
+                    play_sound("select")
                     dragging = True
                 if stable == G_SELECT and gesture != G_SELECT:
                     release_drag()
@@ -193,21 +217,28 @@ try:
                 vol_prev_y = None
                 vol_prev_g = None
 
-            # Play/pause: hold the gesture for PLAY_HOLD seconds
+            # Play/pause toggle: hold the gesture for PLAY_HOLD seconds.
+            # It fires once per hold; drop the gesture and show it again to toggle back.
             if gesture == G_PLAYPAUSE:
                 if hold_start is None:
                     hold_start = now
-                elif now - hold_start >= PLAY_HOLD and now - last_play > PLAY_COOLDOWN:
+                    play_fired = False
+                elif (not play_fired and now - hold_start >= PLAY_HOLD
+                      and now - last_play > PLAY_COOLDOWN):
                     pyautogui.press("space")
+                    play_sound("play")
                     last_play = now
+                    play_fired = True
             else:
                 hold_start = None
+                play_fired = False
         else:
             release_drag()
             prev_y = None
             vol_prev_y = None
             vol_prev_g = None
             hold_start = None
+            play_fired = False
 
         stable = gesture
 
