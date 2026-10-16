@@ -1,6 +1,6 @@
+.venv/
 venv/
 __pycache__/
 hagrid/
-*.joblib
 *.png
 .DS_Store

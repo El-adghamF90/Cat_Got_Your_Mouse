@@ -49,6 +49,9 @@ models = {
 best_name, best_acc, best_model = None, 0, None
 for name, model in models.items():
     model.fit(X_train, y_train)
+    print(f"{name} train accuracy = {accuracy_score(y_train, model.predict(X_train)):.4f}")
+    print(f"{name} test accuracy = {accuracy_score(y_test, model.predict(X_test)):.4f}")
+
     acc = accuracy_score(y_val, model.predict(X_val))
 
     t = time.perf_counter()

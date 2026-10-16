@@ -1,6 +1,6 @@
 import os
 
-BASE = os.path.expanduser("~/Documents/data")
+BASE = os.path.expanduser("C:/Users/HP/Desktop/Mouse/tom-jerry/Data/annotations")
 HERE = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(HERE, "model.joblib")
 CAMERA_CSV = os.path.join(BASE, "camera.csv")   # samples recorded from your own camera
